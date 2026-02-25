@@ -126,6 +126,7 @@ export default function LiveWall() {
                     width="100%"
                     height="100%"
                     style={{ position: 'absolute', top: 0, left: 0 }}
+                    config={{ file: { attributes: { style: { width: '100%', height: '100%', objectFit: 'cover' } } } }}
                 />
             );
         };
@@ -325,7 +326,7 @@ export default function LiveWall() {
                                     style={{
                                         width: '100vw',
                                         height: '100vh',
-                                        objectFit: 'contain',
+                                        objectFit: 'cover',
                                         animation: 'fadeKeyframe 1s ease-in-out forwards',
                                     }}
                                     key={`video-${currentPhoto?.id}`}
@@ -337,7 +338,7 @@ export default function LiveWall() {
                                     style={{
                                         width: '100vw',
                                         height: '100vh',
-                                        objectFit: 'contain',
+                                        objectFit: 'cover',
                                         animation: 'fadeKeyframe 1s ease-in-out forwards',
                                     }}
                                     key={`img-${currentPhoto?.id}`}
