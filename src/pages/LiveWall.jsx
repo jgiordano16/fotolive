@@ -95,34 +95,58 @@ export default function LiveWall() {
         const kickChannel = getKickChannel(event.liveStreamUrl);
 
         const renderPlayer = () => {
-            if (twitchChannel) {
-                return (
+            const iframeStyle = {
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '100vw',
+                height: '100vh',
+                border: 'none',
+                pointerEvents: 'none' // Evita que se pause accidentalmente al clickear
+            };
+
+            const IframeCover = ({ src }) => (
+                <>
+                    <style>{`
+                        .iframe-cover {
+                            width: 100vw;
+                            height: 100vh;
+                        }
+                        @media (max-aspect-ratio: 16/9) {
+                            .iframe-cover {
+                                width: calc(100vh * (16 / 9));
+                            }
+                        }
+                        @media (min-aspect-ratio: 16/9) {
+                            .iframe-cover {
+                                height: calc(100vw * (9 / 16));
+                            }
+                        }
+                    `}</style>
                     <iframe
-                        src={`https://player.twitch.tv/?channel=${twitchChannel}&parent=${window.location.hostname}&muted=true&autoplay=true`}
+                        src={src}
+                        className="iframe-cover"
                         frameBorder="0"
                         allowFullScreen
                         allow="autoplay; encrypted-media; fullscreen"
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        style={iframeStyle}
                     />
-                );
+                </>
+            );
+
+            if (twitchChannel) {
+                return <IframeCover src={`https://player.twitch.tv/?channel=${twitchChannel}&parent=${window.location.hostname}&muted=false&autoplay=true`} />;
             }
             if (kickChannel) {
-                return (
-                    <iframe
-                        src={`https://player.kick.com/${kickChannel}`}
-                        frameBorder="0"
-                        allowFullScreen
-                        allow="autoplay; encrypted-media; fullscreen"
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                    />
-                );
+                return <IframeCover src={`https://player.kick.com/${kickChannel}`} />;
             }
             return (
                 <ReactPlayer
                     url={event.liveStreamUrl}
                     playing={true}
                     controls={true}
-                    muted={true}
+                    muted={false}
                     width="100%"
                     height="100%"
                     style={{ position: 'absolute', top: 0, left: 0 }}
@@ -326,7 +350,7 @@ export default function LiveWall() {
                                     style={{
                                         width: '100vw',
                                         height: '100vh',
-                                        objectFit: 'cover',
+                                        objectFit: 'contain',
                                         animation: 'fadeKeyframe 1s ease-in-out forwards',
                                     }}
                                     key={`video-${currentPhoto?.id}`}
@@ -338,7 +362,7 @@ export default function LiveWall() {
                                     style={{
                                         width: '100vw',
                                         height: '100vh',
-                                        objectFit: 'cover',
+                                        objectFit: 'contain',
                                         animation: 'fadeKeyframe 1s ease-in-out forwards',
                                     }}
                                     key={`img-${currentPhoto?.id}`}
