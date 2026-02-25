@@ -95,13 +95,16 @@ export default function LiveWall() {
         const kickChannel = getKickChannel(event.liveStreamUrl);
 
         const renderPlayer = () => {
+            const rotation = event.liveStreamRotation || 0;
+            const isVertical = rotation === 90 || rotation === 270;
+
             const iframeStyle = {
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '100vw',
-                height: '100vh',
+                transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                width: isVertical ? '100vh' : '100vw',
+                height: isVertical ? '100vw' : '100vh',
                 border: 'none'
             };
 
@@ -109,17 +112,12 @@ export default function LiveWall() {
                 <>
                     <style>{`
                         .iframe-cover {
-                            width: 100vw;
-                            height: 100vh;
+                            width: ${isVertical ? '100vh' : '100vw'};
+                            height: ${isVertical ? '100vw' : '100vh'};
                         }
                         @media (max-aspect-ratio: 16/9) {
                             .iframe-cover {
-                                width: calc(100vh * (16 / 9));
-                            }
-                        }
-                        @media (min-aspect-ratio: 16/9) {
-                            .iframe-cover {
-                                height: calc(100vw * (9 / 16));
+                                width: ${isVertical ? 'calc(100vw * (16 / 9))' : 'calc(100vh * (16 / 9))'};
                             }
                         }
                     `}</style>
@@ -141,16 +139,17 @@ export default function LiveWall() {
                 return <IframeCover src={`https://player.kick.com/${kickChannel}`} />;
             }
             return (
-                <ReactPlayer
-                    url={event.liveStreamUrl}
-                    playing={true}
-                    controls={true}
-                    muted={true}
-                    width="100%"
-                    height="100%"
-                    style={{ position: 'absolute', top: 0, left: 0 }}
-                    config={{ file: { attributes: { style: { width: '100%', height: '100%', objectFit: 'cover' } } } }}
-                />
+                <div style={{ ...iframeStyle, overflow: 'hidden' }}>
+                    <ReactPlayer
+                        url={event.liveStreamUrl}
+                        playing={true}
+                        controls={true}
+                        muted={true}
+                        width="100%"
+                        height="100%"
+                        config={{ file: { attributes: { style: { width: '100%', height: '100%', objectFit: 'cover' } } } }}
+                    />
+                </div>
             );
         };
 

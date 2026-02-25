@@ -65,6 +65,15 @@ export default function Moderation() {
                                 onChange={(e) => setStreamInput(e.target.value)}
                                 style={{ flex: 1 }}
                             />
+                            {event?.liveStreamUrl && (
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => updateEventDoc(eventId, { liveStreamRotation: ((event.liveStreamRotation || 0) + 90) % 360 })}
+                                    title="Rotar imagen"
+                                >
+                                    <MonitorPlay size={18} style={{ transform: `rotate(${(event.liveStreamRotation || 0)}deg)` }} />
+                                </button>
+                            )}
                             {event?.liveStreamUrl ? (
                                 <button className="btn btn-secondary" onClick={handleStopStream} style={{ borderColor: 'var(--error)' }}>
                                     <StopCircle size={18} color="var(--error)" /> Detener
