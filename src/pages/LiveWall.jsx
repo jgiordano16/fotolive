@@ -102,8 +102,7 @@ export default function LiveWall() {
                 transform: 'translate(-50%, -50%)',
                 width: '100vw',
                 height: '100vh',
-                border: 'none',
-                pointerEvents: 'none' // Evita que se pause accidentalmente al clickear
+                border: 'none'
             };
 
             const IframeCover = ({ src }) => (
@@ -136,7 +135,7 @@ export default function LiveWall() {
             );
 
             if (twitchChannel) {
-                return <IframeCover src={`https://player.twitch.tv/?channel=${twitchChannel}&parent=${window.location.hostname}&muted=false&autoplay=true`} />;
+                return <IframeCover src={`https://player.twitch.tv/?channel=${twitchChannel}&parent=${window.location.hostname}&muted=true&autoplay=true`} />;
             }
             if (kickChannel) {
                 return <IframeCover src={`https://player.kick.com/${kickChannel}`} />;
@@ -146,7 +145,7 @@ export default function LiveWall() {
                     url={event.liveStreamUrl}
                     playing={true}
                     controls={true}
-                    muted={false}
+                    muted={true}
                     width="100%"
                     height="100%"
                     style={{ position: 'absolute', top: 0, left: 0 }}
