@@ -18,15 +18,23 @@ export function useMedia(eventId, status = null, playlistId = null) {
         if (!eventId) return;
         const constraints = [where('eventId', '==', eventId)];
         if (status) constraints.push(where('status', '==', status));
-        if (playlistId) constraints.push(where('playlistIds', 'array-contains', playlistId));
+        // No añadimos el filtro de playlistId aquí para evitar la necesidad de índices compuestos complejos
 
         const q = query(collection(db, 'media'), ...constraints);
         const unsub = onSnapshot(q, (snap) => {
-            const rawMedia = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            let docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-            // Ordenar localmente por createdAt (descendente) 
-            // Esto evita el error de índice compuesto en Firebase
-            const sortedMedia = rawMedia.sort((a, b) => {
+            // Filtrado por playlistId en memoria
+            if (playlistId) {
+                docs = docs.filter(item =>
+                    item.playlistIds &&
+                    Array.isArray(item.playlistIds) &&
+                    item.playlistIds.includes(playlistId)
+                );
+            }
+
+            // Ordenar localmente por createdAt (descendente)
+            const sortedMedia = docs.sort((a, b) => {
                 const timeA = a.createdAt?.toMillis?.() || 0;
                 const timeB = b.createdAt?.toMillis?.() || 0;
                 return timeB - timeA;
@@ -59,7 +67,7 @@ export function useMedia(eventId, status = null, playlistId = null) {
 }
 
 // Upload hook: handle file → Storage → Firestore
-export function useUpload(eventId, uploaderName = 'Invitado', autoApprove = false) {
+export function useUpload(eventId, uploaderName = 'Invitado', autoApprove = false, playlistId = null) {
     const [progress, setProgress] = useState(0);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState(null);
@@ -89,14 +97,22 @@ export function useUpload(eventId, uploaderName = 'Invitado', autoApprove = fals
                         reject,
                         async () => {
                             const url = await getDownloadURL(task.snapshot.ref);
-                            await addDoc(collection(db, 'media'), {
+
+                            const mediaDoc = {
                                 eventId,
                                 uploaderName: finalName,
                                 fileUrl: url,
                                 mediaType: isVideo ? 'video' : 'image',
                                 status: autoApprove ? 'approved' : 'pending',
                                 createdAt: serverTimestamp(),
-                            });
+                            };
+
+                            // Si hay una playlist activa, la asignamos
+                            if (playlistId) {
+                                mediaDoc.playlistIds = [playlistId];
+                            }
+
+                            await addDoc(collection(db, 'media'), mediaDoc);
                             done++;
                             setProgress(Math.round((done / total) * 100));
                             resolve();

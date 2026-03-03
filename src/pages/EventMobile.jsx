@@ -7,7 +7,12 @@ import { useUpload } from '../hooks/useMedia';
 export default function EventMobile() {
     const { eventId } = useParams();
     const { event, loading: eventLoading } = useEvent(eventId);
-    const { uploadFiles, progress, uploading } = useUpload(eventId, 'Invitado', event?.liveWallConfig?.autoApprove);
+    const { uploadFiles, progress, uploading } = useUpload(
+        eventId,
+        'Invitado',
+        event?.liveWallConfig?.autoApprove,
+        event?.activePlaylistId
+    );
     const fileInputRef = useRef(null);
     const [uploadSuccess, setUploadSuccess] = useState(false);
 

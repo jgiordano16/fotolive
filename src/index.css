@@ -337,6 +337,20 @@ select {
   font-size: var(--text-base);
   transition: all var(--transition-base);
   outline: none;
+  color-scheme: dark;
+  /* Helps on some browsers to theme the dropdown */
+}
+
+select.input,
+select.form-input {
+  background-color: #121212;
+  color: #fff;
+}
+
+select.input option,
+select.form-input option {
+  background-color: #121212;
+  color: #fff;
 }
 
 .input:focus,

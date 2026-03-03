@@ -44,6 +44,7 @@ export default function LiveWall() {
 
     const [mode, setMode] = useState('single');
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [currentEffect, setCurrentEffect] = useState('fadeKeyframe');
     const [isFullscreen, setIsFullscreen] = useState(false);
     const containerRef = useRef(null);
 
@@ -60,6 +61,17 @@ export default function LiveWall() {
         }, config.imageTime * 1000);
         return () => clearInterval(interval);
     }, [mode, realMedia.length, config.imageTime, config.playbackType]);
+
+    // Manejar el Mix de efectos
+    useEffect(() => {
+        if (config.playbackType === 'Mix') {
+            const effects = ['Zoom', 'Slide', 'Desenfocar', 'Cubo', 'Predeterminada'];
+            const randomEffect = effects[Math.floor(Math.random() * effects.length)];
+            setCurrentEffect(getAnimationName(randomEffect));
+        } else {
+            setCurrentEffect(getAnimationName(config.playbackType));
+        }
+    }, [currentIndex, config.playbackType]);
 
     // Reset index when playlist changes remotely
     useEffect(() => {
@@ -312,34 +324,111 @@ export default function LiveWall() {
                         /* VISTA SINGLE: Pantalla Completa Cinematográfica */
                         mode === 'single' && (
                             <div className="live-wall-single" style={{ overflow: 'hidden', flex: 1, position: 'relative' }}>
-                                {/* Renderizamos video o imagen dependiendo del tipo */}
-                                {currentPhoto?.mediaType === 'video' ? (
-                                    <video
-                                        src={currentPhoto?.fileUrl}
-                                        autoPlay
-                                        muted
-                                        loop
-                                        playsInline
-                                        style={{
-                                            width: '100vw',
-                                            height: '100vh',
-                                            objectFit: 'contain',
-                                            animation: 'fadeKeyframe 1s ease-in-out forwards',
-                                        }}
-                                        key={`video-${currentPhoto?.id}`}
-                                    />
+                                {config.playbackType === 'Collage' ? (
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr 1.6fr 1fr',
+                                        gridTemplateRows: '1fr 1fr',
+                                        gap: '2vw',
+                                        width: '100vw',
+                                        height: '100vh',
+                                        padding: '4vw',
+                                        background: getDynamicBg(), // Usar el fondo del evento
+                                        position: 'relative'
+                                    }}>
+                                        {/* Columna Izquierda (2 fotos) */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2vw', justifyContent: 'center' }}>
+                                            {[0, 1].map((off) => {
+                                                const idx = (currentIndex + off) % realMedia.length;
+                                                const item = realMedia[idx];
+                                                if (!item) return null;
+                                                return (
+                                                    <div key={`left-${idx}`} className="polaroid-wrapper" style={{ transform: `rotate(${off === 0 ? '-3deg' : '2deg'})` }}>
+                                                        <div className="polaroid-frame" style={{ paddingBottom: '1.5vw' }}>
+                                                            <div className="polaroid-inner">
+                                                                {item.mediaType === 'video' ? (
+                                                                    <video src={item.fileUrl} autoPlay muted loop playsInline />
+                                                                ) : (
+                                                                    <img src={item.fileUrl} alt="" />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Columna Central (Fija, Ocupa todo el alto) */}
+                                        <div style={{ gridRow: 'span 2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div className="polaroid-wrapper center-polaroid" style={{ height: '90%', width: '100%' }}>
+                                                <div className="polaroid-frame" style={{ height: '100%', padding: '20px' }}>
+                                                    <div className="polaroid-inner" style={{ background: '#111' }}>
+                                                        {config.collageFixedPhoto ? (
+                                                            <img src={config.collageFixedPhoto} alt="Central" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#888' }}>
+                                                                <Monitor size={64} opacity={0.2} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Columna Derecha (1 sola foto arriba para dejar espacio al QR) */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2vw', justifyContent: 'flex-start' }}>
+                                            {[2].map((off) => {
+                                                const idx = (currentIndex + off) % realMedia.length;
+                                                const item = realMedia[idx];
+                                                if (!item) return null;
+                                                return (
+                                                    <div key={`right-${idx}`} className="polaroid-wrapper" style={{ transform: `rotate(3deg)`, marginTop: '2vw' }}>
+                                                        <div className="polaroid-frame" style={{ paddingBottom: '1.5vw' }}>
+                                                            <div className="polaroid-inner">
+                                                                {item.mediaType === 'video' ? (
+                                                                    <video src={item.fileUrl} autoPlay muted loop playsInline />
+                                                                ) : (
+                                                                    <img src={item.fileUrl} alt="" />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <img
-                                        src={currentPhoto?.fileUrl}
-                                        alt="En vivo"
-                                        style={{
-                                            width: '100vw',
-                                            height: '100vh',
-                                            objectFit: 'contain',
-                                            animation: 'fadeKeyframe 1s ease-in-out forwards',
-                                        }}
-                                        key={`img-${currentPhoto?.id}`}
-                                    />
+                                    /* MANTENER SINGLE PERO CON EFECTO */
+                                    <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {currentPhoto?.mediaType === 'video' ? (
+                                            <video
+                                                src={currentPhoto?.fileUrl}
+                                                autoPlay
+                                                muted
+                                                loop
+                                                playsInline
+                                                style={{
+                                                    width: '100vw',
+                                                    height: '100vh',
+                                                    objectFit: 'contain',
+                                                    animation: `${currentEffect} 1.5s ease-in-out forwards`,
+                                                }}
+                                                key={`vid-${currentPhoto?.id}`}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={currentPhoto?.fileUrl}
+                                                alt="En vivo"
+                                                style={{
+                                                    width: '100vw',
+                                                    height: '100vh',
+                                                    objectFit: 'contain',
+                                                    animation: `${currentEffect} 1.5s ease-in-out forwards`,
+                                                }}
+                                                key={`img-${currentPhoto?.id}`}
+                                            />
+                                        )}
+                                    </div>
                                 )}
 
                                 {config.showQrAlways && (
@@ -348,6 +437,7 @@ export default function LiveWall() {
                                         top: `${config.qrPosY}%`,
                                         left: `${config.qrPosX}%`,
                                         transform: 'translate(-50%, -50%)',
+                                        zIndex: 100,
                                         background: config.qrAlwaysBgColor,
                                         borderRadius: '1.5rem',
                                         padding: '1.25rem',
@@ -362,7 +452,7 @@ export default function LiveWall() {
                                     </div>
                                 )}
 
-                                {config.showUserName && currentPhoto && (
+                                {config.showUserName && currentPhoto && config.playbackType !== 'Collage' && (
                                     <div style={{
                                         position: 'absolute', bottom: 40, left: 40,
                                         background: config.userNameBgColor,
@@ -389,7 +479,74 @@ export default function LiveWall() {
                     0% { opacity: 0; transform: scale(1.05); }
                     100% { opacity: 1; transform: scale(1); }
                 }
+                @keyframes zoomEffect {
+                    0% { opacity: 0; transform: scale(0.5) rotate(-5deg); filter: blur(10px); }
+                    100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); }
+                }
+                @keyframes slideEffect {
+                    0% { opacity: 0; transform: translateX(100%) skewX(-10deg); }
+                    100% { opacity: 1; transform: translateX(0) skewX(0); }
+                }
+                @keyframes blurEffect {
+                    0% { opacity: 0; filter: blur(50px) brightness(2); }
+                    100% { opacity: 1; filter: blur(0) brightness(1); }
+                }
+                @keyframes cubeEffect {
+                    0% { opacity: 0; transform: perspective(1000px) rotateY(90deg) translateZ(100px); }
+                    100% { opacity: 1; transform: perspective(1000px) rotateY(0) translateZ(0); }
+                }
+
+                .polaroid-frame {
+                    background: white;
+                    padding: 1vw 1vw 4vw 1vw;
+                    box-shadow: 0 1vw 3vw rgba(0,0,0,0.4);
+                    border: 1px solid rgba(0,0,0,0.1);
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                    height: auto;
+                    position: relative;
+                }
+                .polaroid-inner {
+                    flex: 1;
+                    overflow: hidden;
+                    background: #eee;
+                    aspect-ratio: 1;
+                    display: flex;
+                }
+                .polaroid-inner img, .polaroid-inner video {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    animation: fadeKeyframe 0.8s ease-in-out forwards;
+                }
+                .polaroid-label {
+                    position: absolute;
+                    bottom: 0.8vw;
+                    left: 0;
+                    right: 0;
+                    text-align: center;
+                    color: #333;
+                    font-family: 'Poppins', sans-serif;
+                    font-weight: 500;
+                    font-size: 1vw;
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                }
+                .center-polaroid .polaroid-inner {
+                    aspect-ratio: auto; /* Dejar que el centro ocupe el alto */
+                }
             `}</style>
         </div >
     );
+}
+
+function getAnimationName(type) {
+    switch (type) {
+        case 'Zoom': return 'zoomEffect';
+        case 'Slide': return 'slideEffect';
+        case 'Desenfocar': return 'blurEffect';
+        case 'Cubo': return 'cubeEffect';
+        default: return 'fadeKeyframe';
+    }
 }

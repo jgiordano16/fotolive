@@ -211,13 +211,33 @@ export default function Moderation() {
                                         </div>
                                     ) : (
                                         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            <span className={`badge ${item.status === 'approved' ? 'badge-success' : 'badge-error'}`}>
-                                                {item.status === 'approved' ? <><CheckCircle2 size={12} /> Aprobada</> : <><XCircle size={12} /> Rechazada</>}
-                                            </span>
-                                            {item.status === 'approved' && item.playlistIds && item.playlistIds.length > 0 && (
-                                                <span style={{ fontSize: '10px', color: 'var(--neutral-400)' }}>
-                                                    En: {playlists.find(p => p.id === item.playlistIds[0])?.name || 'Lista eliminada'}
+                                            <div style={{ display: 'flex', justifyContent: 'center', gap: '5px' }}>
+                                                <span className={`badge ${item.status === 'approved' ? 'badge-success' : 'badge-error'}`}>
+                                                    {item.status === 'approved' ? <><CheckCircle2 size={12} /> Aprobada</> : <><XCircle size={12} /> Rechazada</>}
                                                 </span>
+                                                {item.status === 'approved' && (!item.playlistIds || item.playlistIds.length === 0) && (
+                                                    <span className="badge badge-warning" title="No aparecerá en playlists específicas">
+                                                        <AlertCircle size={12} /> Sin Lista
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {item.status === 'approved' && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <span style={{ fontSize: '10px', color: 'var(--neutral-400)', fontWeight: 600 }}>
+                                                        {item.playlistIds && item.playlistIds.length > 0
+                                                            ? `LISTA: ${playlists.find(p => p.id === item.playlistIds[0])?.name || '??'}`
+                                                            : 'PANTALLA GENERAL'
+                                                        }
+                                                    </span>
+                                                    <button
+                                                        className="btn btn-sm"
+                                                        onClick={() => moderate(item.id, 'approved', selectedPlaylistId)}
+                                                        style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                    >
+                                                        Cambiar a lista actual
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     )}

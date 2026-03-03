@@ -125,24 +125,48 @@ export default function Configuration() {
                                 {/* Oscurecedor por brillo */}
                                 <div style={{ position: 'absolute', inset: 0, background: 'black', opacity: 1 - (config.bgBrightness / 100), zIndex: 1 }} />
 
-                                <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
-                                    <div style={{ width: 160, height: 220, background: '#222', borderRadius: 8, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px solid white' }}>
-                                        <Monitor size={48} color="#555" />
+                                {config.playbackType === 'Collage' ? (
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(3, 1fr)',
+                                        gridTemplateRows: 'repeat(3, 1fr)',
+                                        gap: '2px',
+                                        width: '100%',
+                                        height: '100%',
+                                        background: 'black',
+                                        position: 'relative',
+                                        zIndex: 10
+                                    }}>
+                                        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((pos) => (
+                                            <div key={pos} style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                                {pos === 4 && config.collageFixedPhoto ? (
+                                                    <img src={config.collageFixedPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <ImageIcon size={14} color="#444" />
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
-                                    {config.showUserName && (
-                                        <div style={{ marginTop: 10 }}>
-                                            <span style={{
-                                                display: 'inline-block',
-                                                padding: '4px 12px',
-                                                borderRadius: 100,
-                                                background: config.userNameBgColor,
-                                                color: config.userNameColor,
-                                                fontSize: '0.8rem',
-                                                fontWeight: 'bold'
-                                            }}>Javier Giordano</span>
+                                ) : (
+                                    <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+                                        <div style={{ width: 160, height: 220, background: '#222', borderRadius: 8, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px solid white' }}>
+                                            <Monitor size={48} color="#555" />
                                         </div>
-                                    )}
-                                </div>
+                                        {config.showUserName && (
+                                            <div style={{ marginTop: 10 }}>
+                                                <span style={{
+                                                    display: 'inline-block',
+                                                    padding: '4px 12px',
+                                                    borderRadius: 100,
+                                                    background: config.userNameBgColor,
+                                                    color: config.userNameColor,
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 'bold'
+                                                }}>Javier Giordano</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Texts preview */}
                                 {config.showWaitText && (
@@ -202,8 +226,14 @@ export default function Configuration() {
                                 <div className="input-group">
                                     <label>Tipo de Reproducción</label>
                                     <select className="input" value={config.playbackType} onChange={(e) => updateConfig('playbackType', e.target.value)}>
-                                        <option value="Predeterminada">Predeterminada</option>
-                                        <option value="Aleatoria">Aleatoria</option>
+                                        <option value="Predeterminada">Predeterminada (Fade)</option>
+                                        <option value="Aleatoria">Aleatoria (Fade)</option>
+                                        <option value="Collage">Collage (Múltiples fotos)</option>
+                                        <option value="Zoom">Efecto Zoom 3D</option>
+                                        <option value="Slide">Efecto Desplazamiento</option>
+                                        <option value="Desenfocar">Efecto Desenfocar</option>
+                                        <option value="Cubo">Efecto Cubo 3D</option>
+                                        <option value="Mix">Mix de Efectos (Aleatorio)</option>
                                     </select>
                                 </div>
                                 <div className="input-group">
@@ -213,6 +243,64 @@ export default function Configuration() {
                                     </div>
                                     <input type="range" min="3" max="30" value={config.imageTime} onChange={(e) => updateConfig('imageTime', Number(e.target.value))} className="range-slider" style={{ width: '100%' }} />
                                 </div>
+
+                                {config.playbackType === 'Collage' && (
+                                    <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                        <h4 style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <ImageIcon size={14} /> Foto Central Fija
+                                        </h4>
+                                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                            <div style={{ width: 80, height: 80, borderRadius: 8, background: '#000', border: '1px solid var(--neutral-700)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {config.collageFixedPhoto ? (
+                                                    <img src={config.collageFixedPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Fixed" />
+                                                ) : (
+                                                    <ImageIcon size={24} color="var(--neutral-600)" />
+                                                )}
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <input
+                                                    type="file"
+                                                    id="collage-upload"
+                                                    hidden
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (!file) return;
+                                                        // Usaremos un input manual o el hook de upload si lo importamos bien
+                                                        // Para simplicidad en este edit, asumimos que el usuario sube y actualizamos la config
+                                                        // Pero mejor implementamos el upload real.
+                                                        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                                                        const { storage } = await import('../firebaseClient');
+                                                        const path = `events/${eventId}/collage_fixed_${Date.now()}`;
+                                                        const sRef = ref(storage, path);
+                                                        await uploadBytes(sRef, file);
+                                                        const url = await getDownloadURL(sRef);
+                                                        updateConfig('collageFixedPhoto', url);
+                                                    }}
+                                                />
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    style={{ width: '100%' }}
+                                                    onClick={() => document.getElementById('collage-upload').click()}
+                                                >
+                                                    {config.collageFixedPhoto ? 'Cambiar Foto' : 'Subir Foto Central'}
+                                                </button>
+                                                {config.collageFixedPhoto && (
+                                                    <button
+                                                        className="btn btn-sm"
+                                                        style={{ width: '100%', marginTop: 8, color: 'var(--error-400)', background: 'transparent' }}
+                                                        onClick={() => updateConfig('collageFixedPhoto', null)}
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p style={{ fontSize: '10px', color: 'var(--neutral-500)', marginTop: 10 }}>
+                                            Esta foto se mantendrá estática en el centro mientras las demás rotan a su alrededor.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Fondo */}
