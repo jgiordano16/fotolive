@@ -66,7 +66,7 @@ export default function EventPublic() {
     };
 
     const handleUpload = async () => {
-        await uploadFiles(files);
+        await uploadFiles(files, uploaderName);
         setFiles([]);
         setPreviews([]);
         alert('¡Fotos subidas exitosamente a Firestore! 🎉');
@@ -98,8 +98,8 @@ export default function EventPublic() {
             <div className="event-hero">
                 <div className="event-hero-bg" style={{ background: `linear-gradient(135deg, ${event.primaryColor || '#6366f1'}, #ec4899, #1e1b4b)` }} />
                 <div className="event-hero-content animate-fade-in-up">
-                    <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'rgba(255,255,255,0.7)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', textDecoration: 'none', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '100px', backdropFilter: 'blur(10px)' }}>
-                        <ArrowLeft size={16} /> Volver al Inicio
+                    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'rgba(255,255,255,0.7)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', textDecoration: 'none', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '100px', backdropFilter: 'blur(10px)' }}>
+                        <ArrowLeft size={16} /> Volver a Fotolive
                     </Link>
                     <div className="hero-badge"><CalendarCheck size={14} /> Estás invitado</div>
                     <h1>{event.name}</h1>

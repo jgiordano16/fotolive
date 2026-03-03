@@ -9,8 +9,8 @@ import {
 } from 'firebase/storage';
 import { db, storage } from '../firebaseClient';
 
-// Real-time media listener for an event (filtered by status)
-export function useMedia(eventId, status = null) {
+// Real-time media listener for an event (filtered by status and/or playlist)
+export function useMedia(eventId, status = null, playlistId = null) {
     const [media, setMedia] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -18,6 +18,7 @@ export function useMedia(eventId, status = null) {
         if (!eventId) return;
         const constraints = [where('eventId', '==', eventId)];
         if (status) constraints.push(where('status', '==', status));
+        if (playlistId) constraints.push(where('playlistIds', 'array-contains', playlistId));
 
         const q = query(collection(db, 'media'), ...constraints);
         const unsub = onSnapshot(q, (snap) => {
@@ -38,11 +39,21 @@ export function useMedia(eventId, status = null) {
             setLoading(false);
         });
         return unsub;
-    }, [eventId, status]);
+    }, [eventId, status, playlistId]);
 
-    // Moderate a single media item
-    const moderate = (mediaId, newStatus) =>
-        updateDoc(doc(db, 'media', mediaId), { status: newStatus });
+    // Moderate a single media item with optional playlist tagging
+    const moderate = (mediaId, newStatus, playlistId = null) => {
+        const updates = { status: newStatus };
+        if (newStatus === 'approved' && playlistId) {
+            // Usamos un array para permitir que una foto esté en múltiples listas si se quiere más adelante
+            // Por ahora, lo añadimos si se pasa el ID.
+            return updateDoc(doc(db, 'media', mediaId), {
+                ...updates,
+                playlistIds: [playlistId] // Sobrescribimos o podríamos usar arrayUnion
+            });
+        }
+        return updateDoc(doc(db, 'media', mediaId), updates);
+    };
 
     return { media, loading, moderate };
 }
@@ -53,11 +64,13 @@ export function useUpload(eventId, uploaderName = 'Invitado', autoApprove = fals
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState(null);
 
-    const uploadFiles = async (files) => {
+    const uploadFiles = async (files, customUploaderName = null) => {
         setUploading(true);
         setError(null);
         const total = files.length;
         let done = 0;
+
+        const finalName = customUploaderName || uploaderName;
 
         for (const file of files) {
             try {
@@ -78,7 +91,7 @@ export function useUpload(eventId, uploaderName = 'Invitado', autoApprove = fals
                             const url = await getDownloadURL(task.snapshot.ref);
                             await addDoc(collection(db, 'media'), {
                                 eventId,
-                                uploaderName,
+                                uploaderName: finalName,
                                 fileUrl: url,
                                 mediaType: isVideo ? 'video' : 'image',
                                 status: autoApprove ? 'approved' : 'pending',

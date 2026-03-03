@@ -26,8 +26,8 @@ export default function Album() {
             <Navbar />
             <div className="container">
                 <div className="album-header animate-fade-in-up">
-                    <Link to={`/dashboard`} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--neutral-400)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)', textDecoration: 'none' }}>
-                        <ArrowLeft size={16} /> Volver al inicio
+                    <Link to={`/event/${eventId}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--neutral-400)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)', textDecoration: 'none' }}>
+                        <ArrowLeft size={16} /> Volver al evento
                     </Link>
                     <h1>Álbum del <span className="gradient-text">Evento</span></h1>
                     <p>{loading ? 'Cargando…' : `${media.length} fotos compartidas por los invitados`}</p>

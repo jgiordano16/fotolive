@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Camera, Mic, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
+import { Camera, Music, MessageSquare, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import { useEvent } from '../hooks/useEvent';
 import { useUpload } from '../hooks/useMedia';
 
@@ -80,13 +80,14 @@ export default function EventMobile() {
                             ¿Qué deseas hacer?
                         </p>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                             <input
                                 type="file"
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                                 multiple
                                 accept="image/*,video/*"
+                                capture="environment"
                                 onChange={handleFileSelect}
                             />
                             <button
@@ -95,7 +96,7 @@ export default function EventMobile() {
                                     background: primaryColor,
                                     color: 'white',
                                     border: 'none',
-                                    padding: 'var(--space-5)',
+                                    padding: 'var(--space-4)',
                                     borderRadius: '100px',
                                     fontSize: 'var(--text-lg)',
                                     fontWeight: 700,
@@ -105,63 +106,80 @@ export default function EventMobile() {
                                     paddingLeft: 'var(--space-8)',
                                     gap: 'var(--space-4)',
                                     cursor: 'pointer',
-                                    boxShadow: '0 10px 25px -5px rgba(219, 107, 107, 0.4)',
+                                    boxShadow: '0 8px 20px -5px rgba(0, 0, 0, 0.2)',
                                     transition: 'transform 0.2s',
                                     width: '100%'
                                 }}
                             >
-                                <Camera size={26} /> Subir Imagen / Video
+                                <Camera size={22} /> Subir Foto / Video
                             </button>
 
-                            <button
-                                style={{
-                                    background: primaryColor,
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: 'var(--space-5)',
-                                    borderRadius: '100px',
-                                    fontSize: 'var(--text-lg)',
-                                    fontWeight: 700,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    paddingLeft: 'var(--space-8)',
-                                    gap: 'var(--space-4)',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 10px 25px -5px rgba(219, 107, 107, 0.4)',
-                                    transition: 'transform 0.2s',
-                                    opacity: 0.95,
-                                    width: '100%'
-                                }}
-                                onClick={() => alert('Función de envío de audio en camino (Próximamente).')}
-                            >
-                                <Mic size={26} /> Enviar Audio
-                            </button>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                <Link
+                                    to={`/interaction/${eventId}?tab=music`}
+                                    style={{
+                                        background: 'var(--neutral-100)',
+                                        color: primaryColor,
+                                        border: `2px solid ${primaryColor}`,
+                                        padding: 'var(--space-3)',
+                                        borderRadius: '20px',
+                                        fontSize: 'var(--text-base)',
+                                        fontWeight: 700,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 'var(--space-1)',
+                                        textDecoration: 'none',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                >
+                                    <Music size={20} /> Música
+                                </Link>
+
+                                <Link
+                                    to={`/interaction/${eventId}?tab=messages`}
+                                    style={{
+                                        background: 'var(--neutral-100)',
+                                        color: primaryColor,
+                                        border: `2px solid ${primaryColor}`,
+                                        padding: 'var(--space-3)',
+                                        borderRadius: '20px',
+                                        fontSize: 'var(--text-base)',
+                                        fontWeight: 700,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 'var(--space-1)',
+                                        textDecoration: 'none',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                >
+                                    <MessageSquare size={20} /> Mensajes
+                                </Link>
+                            </div>
 
                             <Link
                                 to={`/album/${eventId}`}
                                 style={{
-                                    background: primaryColor,
-                                    color: 'white',
+                                    background: 'transparent',
+                                    color: primaryColor,
                                     border: 'none',
-                                    padding: 'var(--space-5)',
+                                    padding: 'var(--space-3)',
                                     borderRadius: '100px',
-                                    fontSize: 'var(--text-lg)',
-                                    fontWeight: 700,
+                                    fontSize: 'var(--text-base)',
+                                    fontWeight: 600,
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'flex-start',
-                                    paddingLeft: 'var(--space-8)',
-                                    gap: 'var(--space-4)',
-                                    cursor: 'pointer',
+                                    justifyContent: 'center',
+                                    gap: 'var(--space-2)',
                                     textDecoration: 'none',
-                                    boxShadow: '0 10px 25px -5px rgba(219, 107, 107, 0.4)',
-                                    transition: 'transform 0.2s',
-                                    opacity: 0.95,
+                                    transition: 'opacity 0.2s',
                                     width: '100%'
                                 }}
                             >
-                                <ImageIcon size={26} /> Ver Galería
+                                <ImageIcon size={20} /> Ver Álbum del Evento
                             </Link>
                         </div>
                     </>

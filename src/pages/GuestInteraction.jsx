@@ -1,12 +1,18 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Music, MessageSquare, UserCheck, Send, ArrowLeft, Clock, Plus, Heart } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useMessages, useMusicSuggestions, useCheckins } from '../hooks/useMessages';
 
 export default function GuestInteraction() {
     const { eventId } = useParams();
-    const [tab, setTab] = useState('music');
+    const [searchParams] = useSearchParams();
+    const [tab, setTab] = useState(searchParams.get('tab') || 'music');
+
+    useEffect(() => {
+        const t = searchParams.get('tab');
+        if (t) setTab(t);
+    }, [searchParams]);
 
     const { songs, suggestSong } = useMusicSuggestions(eventId);
     const { messages, sendMessage } = useMessages(eventId);
@@ -48,8 +54,8 @@ export default function GuestInteraction() {
         <div className="interaction-page">
             <Navbar />
             <div className="container" style={{ paddingTop: 'var(--space-4)' }}>
-                <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--neutral-400)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', textDecoration: 'none' }}>
-                    <ArrowLeft size={16} /> Volver al inicio
+                <Link to={`/qr/${eventId}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--neutral-400)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', textDecoration: 'none' }}>
+                    <ArrowLeft size={16} /> Volver al menú
                 </Link>
                 <h1 style={{ fontSize: 'var(--text-3xl)', marginBottom: 'var(--space-6)' }}>
                     Interacción del <span className="gradient-text">Evento</span>

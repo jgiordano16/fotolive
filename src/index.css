@@ -326,7 +326,8 @@ select {
   color: var(--neutral-300);
 }
 
-.input {
+.input,
+.form-input {
   width: 100%;
   padding: var(--space-3) var(--space-4);
   background: rgba(255, 255, 255, 0.05);
@@ -338,7 +339,8 @@ select {
   outline: none;
 }
 
-.input:focus {
+.input:focus,
+.form-input:focus {
   border-color: var(--primary-500);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }

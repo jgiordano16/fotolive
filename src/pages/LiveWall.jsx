@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Link } from 'react-router-dom';
 import {
-    Maximize, Minimize, Grid, Monitor, Camera, ArrowLeft
+    Maximize, Minimize, Grid, Monitor, Camera, ArrowLeft, LayoutList
 } from 'lucide-react';
 import ReactPlayer from 'react-player';
 import { useEvent } from '../hooks/useEvent';
 import { useMedia } from '../hooks/useMedia';
+import { usePlaylists } from '../hooks/usePlaylists';
 import { VIDEO_LIBRARY } from '../constants/videos';
+
 const DEFAULT_CONFIG = {
+    // ... (rest of constants stays the same but I should include them in the replace)
     autoApprove: false,
     playbackType: 'Predeterminada',
     imageTime: 8,
@@ -37,7 +39,8 @@ const DEFAULT_CONFIG = {
 export default function LiveWall() {
     const { eventId } = useParams();
     const { event } = useEvent(eventId);
-    const { media: realMedia } = useMedia(eventId, 'approved');
+    const { playlists } = usePlaylists(eventId);
+    const { media: realMedia } = useMedia(eventId, 'approved', event?.activePlaylistId);
 
     const [mode, setMode] = useState('single');
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -58,7 +61,13 @@ export default function LiveWall() {
         return () => clearInterval(interval);
     }, [mode, realMedia.length, config.imageTime, config.playbackType]);
 
+    // Reset index when playlist changes remotely
+    useEffect(() => {
+        setCurrentIndex(0);
+    }, [event?.activePlaylistId]);
+
     const getDynamicBg = () => {
+        // ... (rest stays the same)
         if (config.bgType === 'color') return config.bgColor1;
         if (config.bgType === 'gradient') return `linear-gradient(135deg, ${config.bgColor1}, ${config.bgColor2})`;
         return 'transparent';
@@ -87,6 +96,13 @@ export default function LiveWall() {
         if (!url) return null;
         const match = url.match(/(?:kick\.com\/)([a-zA-Z0-9_-]+)/);
         return match ? match[1] : null;
+    };
+
+    const [started, setStarted] = useState(false);
+
+    const handleStartProjection = () => {
+        toggleFullscreen();
+        setStarted(true);
     };
 
     // MODO STREAMING EN VIVO
@@ -143,7 +159,7 @@ export default function LiveWall() {
                     <ReactPlayer
                         url={event.liveStreamUrl}
                         playing={true}
-                        controls={true}
+                        controls={false}
                         muted={true}
                         width="100%"
                         height="100%"
@@ -155,25 +171,14 @@ export default function LiveWall() {
 
         return (
             <div className="live-wall" ref={containerRef} style={{ background: '#000', width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+                {!started && (
+                    <div style={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}>
+                        <button className="btn btn-primary btn-lg" onClick={handleStartProjection}>
+                            <Monitor size={24} /> INICIAR PROYECCIÓN EN VIVO
+                        </button>
+                    </div>
+                )}
                 {renderPlayer()}
-
-                {/* Controles Overlay */}
-                <div style={{ position: 'absolute', top: 30, left: 30, zIndex: 100 }}>
-                    <Link to="/dashboard" className="btn btn-secondary btn-sm" style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', textDecoration: 'none' }}>
-                        <ArrowLeft size={16} /> Volver
-                    </Link>
-                </div>
-                <div style={{ position: 'absolute', top: 30, right: 30, display: 'flex', gap: 10, zIndex: 100 }}>
-                    <button className="btn btn-secondary btn-sm" onClick={toggleFullscreen} style={{ background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none' }}>
-                        {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
-                    </button>
-                </div>
-
-                {/* Indicador En Vivo */}
-                <div style={{ position: 'absolute', bottom: 30, left: 30, zIndex: 100, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.6)', padding: '8px 16px', borderRadius: 'var(--radius-lg)' }}>
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', animation: 'pulse 2s infinite' }} />
-                    <span style={{ color: 'white', fontSize: 'var(--text-sm)', fontWeight: 600 }}>EN VIVO</span>
-                </div>
             </div>
         );
     }
@@ -182,6 +187,13 @@ export default function LiveWall() {
     if (realMedia.length === 0) {
         return (
             <div className="live-wall" ref={containerRef} style={{ background: getDynamicBg(), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                {!started && (
+                    <div style={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}>
+                        <button className="btn btn-primary btn-lg" onClick={handleStartProjection}>
+                            <Monitor size={24} /> INICIAR PROYECCIÓN
+                        </button>
+                    </div>
+                )}
                 {/* Video Background Layer */}
                 {config.bgType === 'video' && config.bgVideo && (
                     <video
@@ -202,18 +214,6 @@ export default function LiveWall() {
                     @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
                 `}</style>
 
-                <div style={{ position: 'absolute', top: 30, left: 30, zIndex: 100 }}>
-                    <Link to="/dashboard" className="btn btn-secondary btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', textDecoration: 'none' }}>
-                        <ArrowLeft size={16} /> Volver
-                    </Link>
-                </div>
-
-                <div style={{ position: 'absolute', top: 30, right: 30, display: 'flex', gap: 10, zIndex: 100 }}>
-                    <button className="btn btn-secondary btn-sm" onClick={toggleFullscreen} style={{ background: 'rgba(255,255,255,0.1)' }}>
-                        {isFullscreen ? <Minimize size={16} color="white" /> : <Maximize size={16} color="white" />}
-                    </button>
-                </div>
-
                 <div className="animate-fade-in-up floating-qr" style={{ textAlign: 'center', fontFamily: config.fontFamily }}>
                     <div style={{ background: config.qrAlwaysBgColor !== 'transparent' ? config.qrAlwaysBgColor : 'white', padding: 20, borderRadius: 24, display: 'inline-block', marginBottom: 40, border: config.qrAlwaysBgColor === 'transparent' ? 'none' : '2px solid rgba(255,255,255,0.2)' }}>
                         <QRCodeSVG value={uploadUrl} size={300} bgColor="transparent" fgColor={config.qrAlwaysColor} level="H" />
@@ -226,6 +226,11 @@ export default function LiveWall() {
                             <p style={{ color: 'var(--neutral-300)', fontSize: '1.5rem', marginTop: 15, textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
                                 Escaneá el código para compartir tus fotos en pantalla gigante 📸
                             </p>
+                            {event?.activePlaylistId && (
+                                <p style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '1.2rem', marginTop: '10px' }}>
+                                    Lista activa: {playlists.find(p => p.id === event.activePlaylistId)?.name}
+                                </p>
+                            )}
                         </>
                     )}
                 </div>
@@ -238,6 +243,13 @@ export default function LiveWall() {
 
     return (
         <div className="live-wall" ref={containerRef} style={{ background: '#000', overflow: 'hidden', position: 'relative', width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+            {!started && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}>
+                    <button className="btn btn-primary btn-lg" onClick={handleStartProjection}>
+                        <Monitor size={24} /> INICIAR PROYECCIÓN
+                    </button>
+                </div>
+            )}
             <div style={{ position: 'absolute', inset: 0, background: getDynamicBg(), zIndex: 0 }} />
             {/* Video Background Layer - Fallback behind the single view */}
             {config.bgType === 'video' && config.bgVideo && (
@@ -256,156 +268,119 @@ export default function LiveWall() {
             {/* Contenido principal se levanta por sobre el fondo interactivo */}
             <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-                {/* Header / Controles ocultables */}
-                <div className="live-wall-header" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)', borderBottom: 'none' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                        <Link to="/dashboard" className="btn btn-secondary btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', textDecoration: 'none' }}>
-                            <ArrowLeft size={16} />
-                        </Link>
-                        <div className="live-indicator">
-                            <div className="live-dot" />
-                            <span>EN VIVO</span>
-                            <span style={{ color: 'var(--neutral-400)', fontSize: 'var(--text-sm)', marginLeft: 'var(--space-2)' }}>
-                                {realMedia.length} fotos reales
-                            </span>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                        {/* Botón Grilla (Mosaico) */}
-                        <button
-                            className="btn btn-sm"
-                            style={{ background: mode === 'grid' ? 'white' : 'rgba(255,255,255,0.1)', color: mode === 'grid' ? 'black' : 'white', border: 'none' }}
-                            onClick={() => setMode('grid')}
-                        >
-                            <Grid size={16} />
-                        </button>
-                        {/* Botón Single (Pantalla Completa Automática) */}
-                        <button
-                            className="btn btn-sm"
-                            style={{ background: mode === 'single' ? 'white' : 'rgba(255,255,255,0.1)', color: mode === 'single' ? 'black' : 'white', border: 'none' }}
-                            onClick={() => setMode('single')}
-                        >
-                            <Monitor size={16} />
-                        </button>
-                        <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.1)', border: 'none' }} onClick={toggleFullscreen}>
-                            {isFullscreen ? <Minimize size={16} color="white" /> : <Maximize size={16} color="white" />}
-                        </button>
-                    </div>
-                </div>
-
                 {/* VISTA GRILLA */}
-                {mode === 'grid' ? (
-                    <div className="live-wall-grid" style={{ paddingTop: 90, padding: 20, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-                        {realMedia.map((photo) => (
-                            <div key={photo.id} className="live-photo animate-fade-in-up" style={{ borderRadius: 16, overflow: 'hidden' }}>
-                                <div style={{
-                                    width: '100%', height: 350,
-                                    position: 'relative',
-                                    background: 'black'
-                                }}>
-                                    {photo.mediaType === 'video' ? (
-                                        <video
-                                            src={photo.fileUrl}
-                                            autoPlay
-                                            muted
-                                            loop
-                                            playsInline
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                        />
-                                    ) : (
-                                        <div style={{
-                                            width: '100%', height: '100%',
-                                            backgroundImage: `url(${photo.fileUrl})`,
-                                            backgroundSize: 'cover',
-                                            backgroundPosition: 'center',
-                                        }} />
-                                    )}
+                {
+                    mode === 'grid' ? (
+                        <div className="live-wall-grid" style={{ paddingTop: 90, padding: 20, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+                            {realMedia.map((photo) => (
+                                <div key={photo.id} className="live-photo animate-fade-in-up" style={{ borderRadius: 16, overflow: 'hidden' }}>
                                     <div style={{
-                                        position: 'absolute', bottom: 'var(--space-3)', left: 'var(--space-3)',
-                                        fontSize: 'var(--text-xs)', fontWeight: 600,
-                                        background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px 14px',
-                                        borderRadius: 'var(--radius-full)', backdropFilter: 'blur(5px)'
+                                        width: '100%', height: 350,
+                                        position: 'relative',
+                                        background: 'black'
                                     }}>
-                                        📸 {photo.uploaderName || 'Invitado'}
+                                        {photo.mediaType === 'video' ? (
+                                            <video
+                                                src={photo.fileUrl}
+                                                autoPlay
+                                                muted
+                                                loop
+                                                playsInline
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            <div style={{
+                                                width: '100%', height: '100%',
+                                                backgroundImage: `url(${photo.fileUrl})`,
+                                                backgroundSize: 'cover',
+                                                backgroundPosition: 'center',
+                                            }} />
+                                        )}
+                                        <div style={{
+                                            position: 'absolute', bottom: 'var(--space-3)', left: 'var(--space-3)',
+                                            fontSize: 'var(--text-xs)', fontWeight: 600,
+                                            background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px 14px',
+                                            borderRadius: 'var(--radius-full)', backdropFilter: 'blur(5px)'
+                                        }}>
+                                            📸 {photo.uploaderName || 'Invitado'}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    /* VISTA SINGLE: Pantalla Completa Cinematográfica */
-                    mode === 'single' && (
-                        <div className="live-wall-single" style={{ overflow: 'hidden', flex: 1, position: 'relative' }}>
-                            {/* Renderizamos video o imagen dependiendo del tipo */}
-                            {currentPhoto?.mediaType === 'video' ? (
-                                <video
-                                    src={currentPhoto?.fileUrl}
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
-                                    style={{
-                                        width: '100vw',
-                                        height: '100vh',
-                                        objectFit: 'contain',
-                                        animation: 'fadeKeyframe 1s ease-in-out forwards',
-                                    }}
-                                    key={`video-${currentPhoto?.id}`}
-                                />
-                            ) : (
-                                <img
-                                    src={currentPhoto?.fileUrl}
-                                    alt="En vivo"
-                                    style={{
-                                        width: '100vw',
-                                        height: '100vh',
-                                        objectFit: 'contain',
-                                        animation: 'fadeKeyframe 1s ease-in-out forwards',
-                                    }}
-                                    key={`img-${currentPhoto?.id}`}
-                                />
-                            )}
-
-                            {config.showQrAlways && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: `${config.qrPosY}%`,
-                                    left: `${config.qrPosX}%`,
-                                    transform: 'translate(-50%, -50%)',
-                                    background: config.qrAlwaysBgColor,
-                                    borderRadius: '1.5rem',
-                                    padding: '1.25rem',
-                                    display: 'flex', alignItems: 'center', gap: '1.25rem', backdropFilter: 'blur(10px)',
-                                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)'
-                                }}>
-                                    <QRCodeSVG value={uploadUrl} size={config.qrSize} bgColor="transparent" fgColor={config.qrAlwaysColor} level="Q" />
-                                    <div>
-                                        <h3 style={{ color: config.waitTextColor, fontFamily: config.fontFamily, fontSize: `${Math.max(16, config.textSize * 0.4)}px`, margin: '0 0 5px 0' }}>{event?.name}</h3>
-                                        <p style={{ color: 'var(--neutral-300)', fontFamily: config.fontFamily, fontSize: `${Math.max(12, config.textSize * 0.3)}px`, margin: 0 }}>Escaneá para subir a la pantalla</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {config.showUserName && currentPhoto && (
-                                <div style={{
-                                    position: 'absolute', bottom: 40, left: 40,
-                                    background: config.userNameBgColor,
-                                    color: config.userNameColor,
-                                    fontFamily: config.fontFamily,
-                                    fontSize: '1.2rem',
-                                    fontWeight: 600,
-                                    padding: '8px 24px',
-                                    borderRadius: 100,
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                                    backdropFilter: 'blur(10px)'
-                                }}>
-                                    📸 {currentPhoto.uploaderName || 'Invitado'}
-                                </div>
-                            )}
+                            ))}
                         </div>
-                    )
-                )}
+                    ) : (
+                        /* VISTA SINGLE: Pantalla Completa Cinematográfica */
+                        mode === 'single' && (
+                            <div className="live-wall-single" style={{ overflow: 'hidden', flex: 1, position: 'relative' }}>
+                                {/* Renderizamos video o imagen dependiendo del tipo */}
+                                {currentPhoto?.mediaType === 'video' ? (
+                                    <video
+                                        src={currentPhoto?.fileUrl}
+                                        autoPlay
+                                        muted
+                                        loop
+                                        playsInline
+                                        style={{
+                                            width: '100vw',
+                                            height: '100vh',
+                                            objectFit: 'contain',
+                                            animation: 'fadeKeyframe 1s ease-in-out forwards',
+                                        }}
+                                        key={`video-${currentPhoto?.id}`}
+                                    />
+                                ) : (
+                                    <img
+                                        src={currentPhoto?.fileUrl}
+                                        alt="En vivo"
+                                        style={{
+                                            width: '100vw',
+                                            height: '100vh',
+                                            objectFit: 'contain',
+                                            animation: 'fadeKeyframe 1s ease-in-out forwards',
+                                        }}
+                                        key={`img-${currentPhoto?.id}`}
+                                    />
+                                )}
+
+                                {config.showQrAlways && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: `${config.qrPosY}%`,
+                                        left: `${config.qrPosX}%`,
+                                        transform: 'translate(-50%, -50%)',
+                                        background: config.qrAlwaysBgColor,
+                                        borderRadius: '1.5rem',
+                                        padding: '1.25rem',
+                                        display: 'flex', alignItems: 'center', gap: '1.25rem', backdropFilter: 'blur(10px)',
+                                        boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)'
+                                    }}>
+                                        <QRCodeSVG value={uploadUrl} size={config.qrSize} bgColor="transparent" fgColor={config.qrAlwaysColor} level="Q" />
+                                        <div>
+                                            <h3 style={{ color: config.waitTextColor, fontFamily: config.fontFamily, fontSize: `${Math.max(16, config.textSize * 0.4)}px`, margin: '0 0 5px 0' }}>{event?.name}</h3>
+                                            <p style={{ color: 'var(--neutral-300)', fontFamily: config.fontFamily, fontSize: `${Math.max(12, config.textSize * 0.3)}px`, margin: 0 }}>Escaneá para subir a la pantalla</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {config.showUserName && currentPhoto && (
+                                    <div style={{
+                                        position: 'absolute', bottom: 40, left: 40,
+                                        background: config.userNameBgColor,
+                                        color: config.userNameColor,
+                                        fontFamily: config.fontFamily,
+                                        fontSize: '1.2rem',
+                                        fontWeight: 600,
+                                        padding: '8px 24px',
+                                        borderRadius: 100,
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                                        backdropFilter: 'blur(10px)'
+                                    }}>
+                                        📸 {currentPhoto.uploaderName || 'Invitado'}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    )}
             </div>
 
             {/* Animación custom para cruce de imágenes en projector */}
@@ -415,6 +390,6 @@ export default function LiveWall() {
                     100% { opacity: 1; transform: scale(1); }
                 }
             `}</style>
-        </div>
+        </div >
     );
 }
