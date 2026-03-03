@@ -254,7 +254,7 @@ export default function LiveWall() {
     const currentPhoto = realMedia[currentIndex];
 
     return (
-        <div className="live-wall" ref={containerRef} style={{ background: '#000', overflow: 'hidden', position: 'relative', width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="live-wall" ref={containerRef} style={{ background: 'transparent', overflow: 'hidden', position: 'relative', width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
             {!started && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}>
                     <button className="btn btn-primary btn-lg" onClick={handleStartProjection}>
@@ -275,7 +275,8 @@ export default function LiveWall() {
                 />
             )}
 
-            <div style={{ position: 'absolute', inset: 0, background: 'black', opacity: 1 - (config.bgBrightness / 100), zIndex: 1 }} />
+            {/* Capa de brillo eliminada o hecha transparente para evitar el fondo negro en los laterales de las fotos */}
+            <div style={{ position: 'absolute', inset: 0, background: 'transparent', zIndex: 1 }} />
 
             {/* Contenido principal se levanta por sobre el fondo interactivo */}
             <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -289,7 +290,7 @@ export default function LiveWall() {
                                     <div style={{
                                         width: '100%', height: 350,
                                         position: 'relative',
-                                        background: 'black'
+                                        background: 'transparent'
                                     }}>
                                         {photo.mediaType === 'video' ? (
                                             <video
@@ -308,14 +309,7 @@ export default function LiveWall() {
                                                 backgroundPosition: 'center',
                                             }} />
                                         )}
-                                        <div style={{
-                                            position: 'absolute', bottom: 'var(--space-3)', left: 'var(--space-3)',
-                                            fontSize: 'var(--text-xs)', fontWeight: 600,
-                                            background: 'rgba(0,0,0,0.6)', color: 'white', padding: '6px 14px',
-                                            borderRadius: 'var(--radius-full)', backdropFilter: 'blur(5px)'
-                                        }}>
-                                            📸 {photo.uploaderName || 'Invitado'}
-                                        </div>
+                                        {/* Nombre de usuario eliminado */}
                                     </div>
                                 </div>
                             ))}
@@ -323,7 +317,7 @@ export default function LiveWall() {
                     ) : (
                         /* VISTA SINGLE: Pantalla Completa Cinematográfica */
                         mode === 'single' && (
-                            <div className="live-wall-single" style={{ overflow: 'hidden', flex: 1, position: 'relative' }}>
+                            <div className="live-wall-single" style={{ overflow: 'hidden', flex: 1, position: 'relative', background: 'transparent' }}>
                                 {config.playbackType === 'Collage' ? (
                                     <div style={{
                                         display: 'grid',
@@ -337,19 +331,19 @@ export default function LiveWall() {
                                         position: 'relative'
                                     }}>
                                         {/* Columna Izquierda (2 fotos) */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2vw', justifyContent: 'center' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2vw', justifyContent: 'center', background: 'transparent' }}>
                                             {[0, 1].map((off) => {
                                                 const idx = (currentIndex + off) % realMedia.length;
                                                 const item = realMedia[idx];
                                                 if (!item) return null;
                                                 return (
-                                                    <div key={`left-${idx}`} className="polaroid-wrapper" style={{ transform: `rotate(${off === 0 ? '-3deg' : '2deg'})` }}>
+                                                    <div key={`left-${idx}`} className="polaroid-wrapper" style={{ transform: `rotate(${off === 0 ? '-3deg' : '2deg'})`, background: 'transparent' }}>
                                                         <div className="polaroid-frame" style={{ paddingBottom: '1.5vw' }}>
-                                                            <div className="polaroid-inner">
+                                                            <div className="polaroid-inner" style={{ background: 'transparent' }}>
                                                                 {item.mediaType === 'video' ? (
-                                                                    <video src={item.fileUrl} autoPlay muted loop playsInline />
+                                                                    <video src={item.fileUrl} autoPlay muted loop playsInline style={{ background: 'transparent' }} />
                                                                 ) : (
-                                                                    <img src={item.fileUrl} alt="" />
+                                                                    <img src={item.fileUrl} alt="" style={{ background: 'transparent' }} />
                                                                 )}
                                                             </div>
                                                         </div>
@@ -359,14 +353,14 @@ export default function LiveWall() {
                                         </div>
 
                                         {/* Columna Central (Fija, Ocupa todo el alto) */}
-                                        <div style={{ gridRow: 'span 2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <div className="polaroid-wrapper center-polaroid" style={{ height: '90%', width: '100%' }}>
+                                        <div style={{ gridRow: 'span 2', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
+                                            <div className="polaroid-wrapper center-polaroid" style={{ height: '95%', width: '100%', background: 'transparent' }}>
                                                 <div className="polaroid-frame" style={{ height: '100%', padding: '20px' }}>
-                                                    <div className="polaroid-inner" style={{ background: '#111' }}>
+                                                    <div className="polaroid-inner" style={{ background: 'transparent' }}>
                                                         {config.collageFixedPhoto ? (
-                                                            <img src={config.collageFixedPhoto} alt="Central" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            <img src={config.collageFixedPhoto} alt="Central" style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'transparent' }} />
                                                         ) : (
-                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#888' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#888', background: 'transparent' }}>
                                                                 <Monitor size={64} opacity={0.2} />
                                                             </div>
                                                         )}
@@ -376,19 +370,19 @@ export default function LiveWall() {
                                         </div>
 
                                         {/* Columna Derecha (1 sola foto arriba para dejar espacio al QR) */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2vw', justifyContent: 'flex-start' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2vw', justifyContent: 'flex-start', background: 'transparent' }}>
                                             {[2].map((off) => {
                                                 const idx = (currentIndex + off) % realMedia.length;
                                                 const item = realMedia[idx];
                                                 if (!item) return null;
                                                 return (
-                                                    <div key={`right-${idx}`} className="polaroid-wrapper" style={{ transform: `rotate(3deg)`, marginTop: '2vw' }}>
+                                                    <div key={`right-${idx}`} className="polaroid-wrapper" style={{ transform: `rotate(3deg)`, marginTop: '2vw', background: 'transparent' }}>
                                                         <div className="polaroid-frame" style={{ paddingBottom: '1.5vw' }}>
-                                                            <div className="polaroid-inner">
+                                                            <div className="polaroid-inner" style={{ background: 'transparent' }}>
                                                                 {item.mediaType === 'video' ? (
-                                                                    <video src={item.fileUrl} autoPlay muted loop playsInline />
+                                                                    <video src={item.fileUrl} autoPlay muted loop playsInline style={{ background: 'transparent' }} />
                                                                 ) : (
-                                                                    <img src={item.fileUrl} alt="" />
+                                                                    <img src={item.fileUrl} alt="" style={{ background: 'transparent' }} />
                                                                 )}
                                                             </div>
                                                         </div>
@@ -399,7 +393,7 @@ export default function LiveWall() {
                                     </div>
                                 ) : (
                                     /* MANTENER SINGLE PERO CON EFECTO */
-                                    <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
                                         {currentPhoto?.mediaType === 'video' ? (
                                             <video
                                                 src={currentPhoto?.fileUrl}
@@ -408,9 +402,14 @@ export default function LiveWall() {
                                                 loop
                                                 playsInline
                                                 style={{
-                                                    width: '100vw',
-                                                    height: '100vh',
+                                                    maxWidth: '85vw',
+                                                    maxHeight: '85vh',
+                                                    width: 'auto',
+                                                    height: 'auto',
                                                     objectFit: 'contain',
+                                                    background: 'transparent',
+                                                    boxShadow: 'none',
+                                                    borderRadius: '2rem',
                                                     animation: `${currentEffect} 1.5s ease-in-out forwards`,
                                                 }}
                                                 key={`vid-${currentPhoto?.id}`}
@@ -420,9 +419,14 @@ export default function LiveWall() {
                                                 src={currentPhoto?.fileUrl}
                                                 alt="En vivo"
                                                 style={{
-                                                    width: '100vw',
-                                                    height: '100vh',
+                                                    maxWidth: '85vw',
+                                                    maxHeight: '85vh',
+                                                    width: 'auto',
+                                                    height: 'auto',
                                                     objectFit: 'contain',
+                                                    background: 'transparent',
+                                                    boxShadow: 'none',
+                                                    borderRadius: '2rem',
                                                     animation: `${currentEffect} 1.5s ease-in-out forwards`,
                                                 }}
                                                 key={`img-${currentPhoto?.id}`}
@@ -452,22 +456,7 @@ export default function LiveWall() {
                                     </div>
                                 )}
 
-                                {config.showUserName && currentPhoto && config.playbackType !== 'Collage' && (
-                                    <div style={{
-                                        position: 'absolute', bottom: 40, left: 40,
-                                        background: config.userNameBgColor,
-                                        color: config.userNameColor,
-                                        fontFamily: config.fontFamily,
-                                        fontSize: '1.2rem',
-                                        fontWeight: 600,
-                                        padding: '8px 24px',
-                                        borderRadius: 100,
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                                        backdropFilter: 'blur(10px)'
-                                    }}>
-                                        📸 {currentPhoto.uploaderName || 'Invitado'}
-                                    </div>
-                                )}
+                                {/* Nombre de usuario eliminado */}
                             </div>
                         )
                     )}
@@ -498,9 +487,9 @@ export default function LiveWall() {
 
                 .polaroid-frame {
                     background: white;
-                    padding: 1vw 1vw 4vw 1vw;
-                    box-shadow: 0 1vw 3vw rgba(0,0,0,0.4);
-                    border: 1px solid rgba(0,0,0,0.1);
+                    padding: 0.8vw 0.8vw 1.2vw 0.8vw;
+                    box-shadow: 0 0.5vw 2vw rgba(0,0,0,0.2);
+                    border: 1px solid rgba(0,0,0,0.05);
                     display: flex;
                     flex-direction: column;
                     width: 100%;
@@ -510,7 +499,7 @@ export default function LiveWall() {
                 .polaroid-inner {
                     flex: 1;
                     overflow: hidden;
-                    background: #eee;
+                    background: transparent;
                     aspect-ratio: 1;
                     display: flex;
                 }

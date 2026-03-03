@@ -78,7 +78,7 @@ export default function Configuration() {
     const paginatedVideos = VIDEO_LIBRARY.slice(videoPage * VIDEOS_PER_PAGE, (videoPage + 1) * VIDEOS_PER_PAGE);
 
     return (
-        <div className="config-page pb-32">
+        <div className="config-page pb-48">
             <div className="container" style={{ paddingTop: 'var(--space-8)' }}>
                 <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--neutral-400)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', textDecoration: 'none' }}>
                     <ArrowLeft size={16} /> Volver al dashboard
@@ -219,6 +219,23 @@ export default function Configuration() {
 
                         {/* Panel Derecho: Formularios */}
                         <div className="config-right-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+
+                            {/* Guardar - Movido aquí para no tapar nada */}
+                            <button
+                                className="btn btn-primary btn-lg"
+                                onClick={handleSave}
+                                disabled={saving}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    fontSize: '1.1rem',
+                                    fontWeight: 700,
+                                    boxShadow: '0 4px 15px rgba(99,102,241,0.3)',
+                                    marginBottom: 'var(--space-2)'
+                                }}
+                            >
+                                <Save size={20} /> {saving ? 'Guardando...' : 'GUARDAR CAMBIOS'}
+                            </button>
 
                             {/* Reproducción */}
                             <div className="glass-card config-section">
@@ -518,18 +535,6 @@ export default function Configuration() {
                         Sección en desarrollo...
                     </div>
                 )}
-            </div>
-
-            {/* Float Save Button */}
-            <div style={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1000 }}>
-                <button
-                    className="btn btn-primary btn-lg"
-                    onClick={handleSave}
-                    disabled={saving}
-                    style={{ padding: '16px 32px', boxShadow: '0 10px 30px rgba(99,102,241,0.5)', borderRadius: 100 }}
-                >
-                    <Save size={20} /> {saving ? 'Guardando...' : 'Guardar Configuración'}
-                </button>
             </div>
 
             <style dangerouslySetInnerHTML={{
