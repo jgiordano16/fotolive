@@ -69,6 +69,12 @@ export default function Moderation() {
         }
     };
 
+    const [itemPlaylists, setItemPlaylists] = useState({});
+
+    const handleItemPlaylistChange = (itemId, playlistId) => {
+        setItemPlaylists(prev => ({ ...prev, [itemId]: playlistId }));
+    };
+
     return (
         <div className="moderation-page">
             <div className="moderation-header">
@@ -110,7 +116,7 @@ export default function Moderation() {
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--neutral-400)' }}>Guardar aprobadas en:</span>
+                                <span style={{ fontSize: '12px', color: 'var(--neutral-400)' }}>Lista por defecto para aprobar:</span>
                                 <select
                                     className="form-input"
                                     style={{ height: '36px', fontSize: '14px', background: 'rgba(0,0,0,0.2)' }}
@@ -201,13 +207,29 @@ export default function Moderation() {
                                         </span>
                                     </div>
                                     {item.status === 'pending' ? (
-                                        <div className="moderation-actions">
-                                            <button className="mod-btn approve" onClick={() => moderate(item.id, 'approved', selectedPlaylistId)}>
-                                                <Check size={16} /> Aprobar
-                                            </button>
-                                            <button className="mod-btn reject" onClick={() => moderate(item.id, 'rejected')}>
-                                                <X size={16} /> Rechazar
-                                            </button>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                <span style={{ fontSize: '10px', color: 'var(--neutral-400)', fontWeight: 600 }}>ASIGNAR A LISTA:</span>
+                                                <select
+                                                    className="form-input"
+                                                    style={{ height: '30px', fontSize: '12px', padding: '0 8px', background: 'rgba(255,255,255,0.03)' }}
+                                                    value={itemPlaylists[item.id] || selectedPlaylistId}
+                                                    onChange={(e) => handleItemPlaylistChange(item.id, e.target.value)}
+                                                >
+                                                    {playlists.length === 0 && <option value="">Sin listas</option>}
+                                                    {playlists.map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="moderation-actions">
+                                                <button className="mod-btn approve" onClick={() => moderate(item.id, 'approved', itemPlaylists[item.id] || selectedPlaylistId)}>
+                                                    <Check size={16} /> Aprobar
+                                                </button>
+                                                <button className="mod-btn reject" onClick={() => moderate(item.id, 'rejected')}>
+                                                    <X size={16} /> Rechazar
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
