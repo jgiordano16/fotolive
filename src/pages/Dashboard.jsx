@@ -147,21 +147,21 @@ export default function Dashboard() {
                                                     <span style={{ color: 'var(--primary-400)' }}>👤 Cliente: {clients.find(c => c.id === event.clientId).name}</span>
                                                 ) : 'Sin cliente vinculado'}
                                             </div>
-                                            <div className="event-card-actions">
-                                                <Link to={`/event/${event.id}`} className="btn btn-secondary btn-sm" title="Ver entrega"><Eye size={14} /></Link>
-                                                <Link to={`/live/${event.id}`} className="btn btn-primary btn-sm" title="Proyectar"><Tv size={14} /></Link>
-                                                <Link to={`/moderation/${event.id}`} className="btn btn-secondary btn-sm" title="Moderar"><Shield size={14} /></Link>
-                                                <Link to={`/configuration/${event.id}`} className="btn btn-secondary btn-sm" title="Configurar Pantalla"><Settings size={14} /></Link>
+                                            <div className="event-card-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                <Link to={`/event/${event.id}`} className="btn btn-secondary btn-sm" title="Ver entrega" style={{ padding: '8px', display: 'flex' }}><Eye size={16} color="white" /></Link>
+                                                <Link to={`/live/${event.id}`} className="btn btn-primary btn-sm" title="Proyectar" style={{ padding: '8px', display: 'flex' }}><Tv size={16} color="white" /></Link>
+                                                <Link to={`/moderation/${event.id}`} className="btn btn-secondary btn-sm" title="Moderar" style={{ padding: '8px', display: 'flex' }}><Shield size={16} color="white" /></Link>
+                                                <Link to={`/configuration/${event.id}`} className="btn btn-secondary btn-sm" title="Configurar Pantalla" style={{ padding: '8px', display: 'flex' }}><Settings size={16} color="white" /></Link>
                                                 <select
                                                     className="btn btn-secondary btn-sm"
-                                                    style={{ width: '110px', padding: '2px', fontSize: '10px' }}
+                                                    style={{ width: '110px', padding: '4px', fontSize: '10px', height: '34px', color: 'white' }}
                                                     onChange={(e) => handleLinkClientToEvent(event.id, e.target.value)}
                                                     value={event.clientId || ''}
                                                 >
-                                                    <option value="">👤 Vincular...</option>
-                                                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                    <option value="" style={{ background: '#333' }}>👤 Vincular...</option>
+                                                    {clients.map(c => <option key={c.id} value={c.id} style={{ background: '#333' }}>{c.name}</option>)}
                                                 </select>
-                                                <button onClick={() => handleEventDelete(event.id, event.name)} className="btn btn-secondary btn-sm" style={{ color: 'var(--error-400)' }} title="Eliminar"><Trash2 size={14} /></button>
+                                                <button onClick={() => handleEventDelete(event.id, event.name)} className="btn btn-secondary btn-sm" style={{ padding: '8px', display: 'flex' }} title="Eliminar"><Trash2 size={16} color="#ef4444" /></button>
                                             </div>
                                         </div>
                                     </div>
