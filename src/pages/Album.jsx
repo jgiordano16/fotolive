@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Camera, Download, Share2, QrCode, X, ChevronLeft, ChevronRight, Heart, ArrowLeft } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import Navbar from '../components/Navbar';
 import { useMedia } from '../hooks/useMedia';
 
@@ -10,15 +12,72 @@ export default function Album() {
     const { media, loading } = useMedia(eventId, 'approved');
     const [lightbox, setLightbox] = useState(null);
     const [showQR, setShowQR] = useState(false);
+    const [downloading, setDownloading] = useState(false);
 
-    const shareUrl = `${window.location.origin}/album/${eventId}`;
+    const generateZipBlob = async () => {
+        const zip = new JSZip();
+        const imgFolder = zip.folder("fotos_evento");
+        const promises = media.map(async (item, index) => {
+            const response = await fetch(item.fileUrl, { mode: 'cors' });
+            if (!response.ok) throw new Error('CORS');
+            const blob = await response.blob();
+            const extension = item.mediaType === 'video' ? 'mp4' : 'jpg';
+            imgFolder.file(`foto_${index + 1}.${extension}`, blob);
+        });
+        await Promise.all(promises);
+        return await zip.generateAsync({ type: 'blob' });
+    };
 
-    const handleDownload = (url) => {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'fotolive-photo.jpg';
-        a.target = '_blank';
-        a.click();
+    const handleShare = async () => {
+        if (media.length === 0 || downloading) return;
+        try {
+            setDownloading(true);
+            const blob = await generateZipBlob();
+            const file = new File([blob], `album_evento.zip`, { type: 'application/zip' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Álbum del Evento',
+                    text: 'Aquí tienes todas las fotos aprobadas del evento.',
+                });
+            } else {
+                saveAs(blob, `album_evento.zip`);
+                alert('Tu navegador no permite compartir archivos directamente. He descargado el ZIP por ti.');
+            }
+        } catch (err) {
+            console.error(err);
+            navigator.clipboard.writeText(window.location.href);
+            alert('No se pudo generar el archivo. Link copiado al portapapeles.');
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    const handleDownloadAll = async () => {
+        if (media.length === 0 || downloading) return;
+        setDownloading(true);
+        alert(`Iniciando descarga de ${media.length} archivos...`);
+
+        try {
+            const blob = await generateZipBlob();
+            saveAs(blob, `album_evento.zip`);
+        } catch (err) {
+            console.log("CORS detected, performing sequential download...");
+            for (const item of media) {
+                const link = document.createElement('a');
+                link.href = item.fileUrl;
+                link.download = item.fileUrl.split('/').pop();
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                await new Promise(r => setTimeout(r, 300));
+            }
+            alert("Descarga completada");
+        } finally {
+            setDownloading(false);
+        }
     };
 
     return (
@@ -32,12 +91,11 @@ export default function Album() {
                     <h1>Álbum del <span className="gradient-text">Evento</span></h1>
                     <p>{loading ? 'Cargando…' : `${media.length} fotos compartidas por los invitados`}</p>
                     <div className="album-actions">
-                        <button className="btn btn-secondary btn-sm"><Download size={16} /> Descargar todo</button>
+                        <button className="btn btn-secondary btn-sm" onClick={handleDownloadAll} disabled={downloading}>
+                            <Download size={16} /> {downloading ? 'Procesando...' : 'Descargar todo (.zip)'}
+                        </button>
                         <button className="btn btn-secondary btn-sm" onClick={() => setShowQR(!showQR)}>
                             <QrCode size={16} /> Compartir QR
-                        </button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => navigator.clipboard?.writeText(shareUrl)}>
-                            <Share2 size={16} /> Copiar link
                         </button>
                     </div>
                 </div>

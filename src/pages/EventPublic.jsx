@@ -1,86 +1,109 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import {
-    Camera, MapPin, Navigation, Clock, Users, Upload,
-    QrCode, CalendarCheck, Send, Image, ArrowLeft
+    Folder, Download, Share2, ArrowLeft, Image as ImageIcon,
+    FileArchive, ExternalLink, Clock, User
 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import Navbar from '../components/Navbar';
 import { useEvent } from '../hooks/useEvent';
-import { useUpload } from '../hooks/useMedia';
-import { useRSVP } from '../hooks/useRSVP';
-
-function CountdownTimer({ targetDate }) {
-    const [time, setTime] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
-    useEffect(() => {
-        const calc = () => {
-            const diff = new Date(targetDate) - new Date();
-            if (diff <= 0) return;
-            setTime({ days: Math.floor(diff / 86400000), hours: Math.floor((diff / 3600000) % 24), mins: Math.floor((diff / 60000) % 60), secs: Math.floor((diff / 1000) % 60) });
-        };
-        calc();
-        const t = setInterval(calc, 1000);
-        return () => clearInterval(t);
-    }, [targetDate]);
-    return (
-        <div className="countdown">
-            {[{ val: time.days, label: 'Días' }, { val: time.hours, label: 'Horas' }, { val: time.mins, label: 'Min' }, { val: time.secs, label: 'Seg' }].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    {i > 0 && <span className="countdown-separator">:</span>}
-                    <div className="countdown-item">
-                        <div className="countdown-number">{String(item.val).padStart(2, '0')}</div>
-                        <div className="countdown-label">{item.label}</div>
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
+import { useMedia } from '../hooks/useMedia';
 
 export default function EventPublic() {
     const { eventId } = useParams();
     const { event, loading: eventLoading } = useEvent(eventId);
-    const { uploadFiles, progress, uploading } = useUpload(eventId, 'Invitado', event?.liveWallConfig?.autoApprove);
-    const { submitRSVP } = useRSVP(eventId);
+    const { media, loading: mediaLoading } = useMedia(eventId, 'approved');
+    const [downloading, setDownloading] = useState(false);
 
-    const [files, setFiles] = useState([]);
-    const [previews, setPreviews] = useState([]);
-    const [dragging, setDragging] = useState(false);
-    const [rsvp, setRsvp] = useState({ name: '', email: '', companions: 0, dietary: '' });
-    const [rsvpSent, setRsvpSent] = useState(false);
-    const [uploaderName, setUploaderName] = useState('');
+    const generateZipBlob = async () => {
+        const zip = new JSZip();
+        const folderName = event?.name?.replace(/[^a-z0-9]/gi, '_') || 'evento';
+        const imgFolder = zip.folder(folderName);
 
-    // La principal diferencia: Este QR envía directo al formulario minimalista en móvil
-    const uploadUrl = `${window.location.origin}/qr/${eventId}`;
+        // Descargar cada archivo y añadirlo al zip
+        const promises = media.map(async (item, index) => {
+            const response = await fetch(item.fileUrl, { mode: 'cors' });
+            if (!response.ok) throw new Error('CORS');
+            const blob = await response.blob();
+            const extension = item.mediaType === 'video' ? 'mp4' : 'jpg';
+            imgFolder.file(`foto_${index + 1}.${extension}`, blob);
+        });
 
-    const handleFiles = (newFiles) => {
-        const arr = Array.from(newFiles);
-        setFiles((p) => [...p, ...arr]);
-        setPreviews((p) => [...p, ...arr.map((f) => URL.createObjectURL(f))]);
+        await Promise.all(promises);
+        return await zip.generateAsync({ type: 'blob' });
     };
 
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setDragging(false);
-        handleFiles(e.dataTransfer.files);
+    const handleShare = async () => {
+        if (media.length === 0 || downloading) return;
+
+        try {
+            setDownloading(true);
+            const blob = await generateZipBlob();
+            const folderName = event?.name?.replace(/[^a-z0-9]/gi, '_') || 'evento';
+            const file = new File([blob], `${folderName}.zip`, { type: 'application/zip' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: `Fotos de ${event?.name}`,
+                    text: 'Aquí tienes todas las fotos del evento.',
+                });
+            } else {
+                // Fallback si no admite archivos
+                const zipUrl = URL.createObjectURL(blob);
+                saveAs(blob, `${folderName}.zip`);
+                alert('Tu navegador no permite compartir archivos directamente. He descargado el ZIP por ti.');
+            }
+        } catch (err) {
+            console.error("Error sharing zip:", err);
+            // Fallback al link
+            navigator.clipboard.writeText(window.location.href); // Using window.location.href as fallback
+            alert('No se pudo generar el archivo para compartir. Link copiado.');
+        } finally {
+            setDownloading(false);
+        }
     };
 
-    const handleUpload = async () => {
-        await uploadFiles(files, uploaderName);
-        setFiles([]);
-        setPreviews([]);
-        alert('¡Fotos subidas exitosamente a Firestore! 🎉');
+    const handleDownloadAll = async () => {
+        if (media.length === 0 || downloading) return;
+
+        setDownloading(true);
+        alert(`Iniciando descarga de ${media.length} archivos...`);
+
+        try {
+            const blob = await generateZipBlob();
+            const folderName = event?.name?.replace(/[^a-z0-9]/gi, '_') || 'evento';
+            saveAs(blob, `${folderName}.zip`);
+        } catch (err) {
+            console.log("Falling back to sequential download...");
+            for (const item of media) {
+                const link = document.createElement('a');
+                link.href = item.fileUrl;
+                link.download = item.fileUrl.split('/').pop();
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                await new Promise(r => setTimeout(r, 300));
+            }
+            alert("Descarga completada");
+        } finally {
+            setDownloading(false);
+        }
     };
 
-    const handleRsvp = async (e) => {
-        e.preventDefault();
-        await submitRSVP(rsvp);
-        setRsvpSent(true);
+    const handleDownloadSingle = (url) => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fotolive-photo.jpg';
+        a.target = '_blank';
+        a.click();
     };
 
     if (eventLoading) return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--neutral-950)' }}>
-            <div style={{ color: 'var(--neutral-400)' }}>Cargando evento…</div>
+            <div style={{ color: 'var(--neutral-400)' }}>Cargando galería…</div>
         </div>
     );
 
@@ -90,137 +113,88 @@ export default function EventPublic() {
         </div>
     );
 
-    const eventDate = event.date ? new Date(event.date) : null;
-
     return (
         <div className="event-public">
             <Navbar />
-            <div className="event-hero">
-                <div className="event-hero-bg" style={{ background: `linear-gradient(135deg, ${event.primaryColor || '#6366f1'}, #ec4899, #1e1b4b)` }} />
-                <div className="event-hero-content animate-fade-in-up">
-                    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'rgba(255,255,255,0.7)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', textDecoration: 'none', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '100px', backdropFilter: 'blur(10px)' }}>
-                        <ArrowLeft size={16} /> Volver a Fotolive
-                    </Link>
-                    <div className="hero-badge"><CalendarCheck size={14} /> Estás invitado</div>
-                    <h1>{event.name}</h1>
-                    {eventDate && <div className="event-date-display"><Clock size={18} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }} />{eventDate.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
-                    {eventDate && <CountdownTimer targetDate={event.date} />}
-                    {event.description && <p style={{ color: 'var(--neutral-300)', maxWidth: 500, margin: '0 auto' }}>{event.description}</p>}
-                </div>
-            </div>
 
-            <div className="event-sections container">
-                {/* Upload */}
-                <div className="event-section" id="upload">
-                    <h2><Upload size={22} color="var(--primary-400)" /> Subí tus fotos</h2>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <input className="input" placeholder="Tu nombre (opcional)" value={uploaderName} onChange={(e) => setUploaderName(e.target.value)} style={{ maxWidth: 300 }} />
+            <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
+                <div className="animate-fade-in-up">
+                    <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--neutral-400)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', textDecoration: 'none' }}>
+                        <ArrowLeft size={16} /> Volver al panel
+                    </Link>
+
+                    {/* Folder Header */}
+                    <div className="glass-card" style={{ padding: 'var(--space-8)', marginBottom: 'var(--space-8)', borderLeft: '4px solid var(--primary-500)', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                            <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '20px', borderRadius: 'var(--radius-xl)', color: 'var(--primary-400)' }}>
+                                <Folder size={48} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h1 style={{ fontSize: 'var(--text-4xl)', marginBottom: 'var(--space-1)', margin: 0 }}>{event.name}</h1>
+                                <p style={{ color: 'var(--neutral-400)', margin: 0 }}>
+                                    {mediaLoading ? 'Calculando archivos...' : `${media.length} archivos totales`}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                                <button className="btn btn-primary" onClick={handleDownloadAll} disabled={downloading}>
+                                    <FileArchive size={18} /> {downloading ? 'Procesando...' : 'Descargar todo (.zip)'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div
-                        className={`upload-area ${dragging ? 'dragging' : ''}`}
-                        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                        onDragLeave={() => setDragging(false)}
-                        onDrop={handleDrop}
-                    >
-                        <div className="upload-area-icon"><Camera size={32} /></div>
-                        <h3>Arrastrá tus fotos aquí</h3>
-                        <p>o hacé clic para seleccionar</p>
-                        <p style={{ marginTop: 8, color: 'var(--neutral-600)', fontSize: 'var(--text-xs)' }}>JPG, PNG, MP4 — máx. 20MB</p>
-                        <input type="file" multiple accept="image/*,video/*" onChange={(e) => handleFiles(e.target.files)} />
-                    </div>
-                    {previews.length > 0 && (
-                        <div className="upload-previews">
-                            {previews.map((src, i) => (
-                                <div key={i} className="upload-preview animate-scale-in">
-                                    <img src={src} alt={`preview-${i}`} />
-                                    <button className="upload-preview-remove" onClick={() => { setFiles(files.filter((_, j) => j !== i)); setPreviews(previews.filter((_, j) => j !== i)); }}>✕</button>
+
+                    {/* Photos Grid */}
+                    {mediaLoading ? (
+                        <div style={{ textAlign: 'center', padding: 'var(--space-16)', color: 'var(--neutral-400)' }}>Explorando carpeta…</div>
+                    ) : media.length === 0 ? (
+                        <div className="empty-state">
+                            <div className="empty-state-icon"><ImageIcon size={32} /></div>
+                            <h3>La carpeta está vacía</h3>
+                            <p>No se han encontrado fotos aprobadas en este evento.</p>
+                        </div>
+                    ) : (
+                        <div className="photo-grid">
+                            {media.map((item) => (
+                                <div key={item.id} className="photo-card" style={{ height: '300px' }}>
+                                    {item.mediaType === 'video' ? (
+                                        <video src={item.fileUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                                    ) : (
+                                        <img src={item.fileUrl} alt={item.uploaderName} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    )}
+                                    <div className="photo-card-overlay">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <User size={12} /> {item.uploaderName || 'Invitado'}
+                                                </div>
+                                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <Clock size={12} /> {item.createdAt?.toDate?.()?.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                            <div className="photo-actions">
+                                                <button
+                                                    className="btn btn-secondary btn-icon btn-sm"
+                                                    title="Descargar"
+                                                    onClick={() => handleDownloadSingle(item.fileUrl)}
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                                <a
+                                                    href={item.fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="btn btn-secondary btn-icon btn-sm"
+                                                    title="Ver original"
+                                                >
+                                                    <ExternalLink size={14} />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     )}
-                    {uploading && (
-                        <div className="upload-progress" style={{ marginTop: 'var(--space-4)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', marginBottom: 6 }}>
-                                <span>Subiendo…</span><span>{progress}%</span>
-                            </div>
-                            <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
-                        </div>
-                    )}
-                    {files.length > 0 && !uploading && (
-                        <button className="btn btn-primary btn-lg" style={{ marginTop: 'var(--space-6)', width: '100%' }} onClick={handleUpload}>
-                            <Upload size={18} /> Subir {files.length} {files.length === 1 ? 'archivo' : 'archivos'}
-                        </button>
-                    )}
-                </div>
-
-                {/* QR */}
-                <div className="event-section qr-section">
-                    <h2 style={{ justifyContent: 'center' }}><QrCode size={22} color="var(--accent-400)" /> Escaneá para subir fotos</h2>
-                    <div className="qr-card glass-card">
-                        <QRCodeSVG value={uploadUrl} size={200} bgColor="transparent" fgColor="white" level="H" style={{ padding: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-xl)' }} />
-                        <p>Escaneá con tu celular para subir fotos y videos al instante</p>
-                    </div>
-                </div>
-
-                {/* RSVP */}
-                <div className="event-section" id="rsvp">
-                    <h2><Users size={22} color="var(--success-400)" /> Confirmar asistencia</h2>
-                    {rsvpSent ? (
-                        <div className="glass-card" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-                            <div style={{ fontSize: 48, marginBottom: 'var(--space-4)' }}>🎉</div>
-                            <h3>¡Gracias por confirmar!</h3>
-                            <p style={{ color: 'var(--neutral-400)', marginTop: 'var(--space-2)' }}>Te esperamos en el evento</p>
-                        </div>
-                    ) : (
-                        <form className="rsvp-form" onSubmit={handleRsvp}>
-                            <div className="input-group">
-                                <label>Nombre completo *</label>
-                                <input className="input" placeholder="Tu nombre" value={rsvp.name} onChange={(e) => setRsvp({ ...rsvp, name: e.target.value })} required />
-                            </div>
-                            <div className="input-group">
-                                <label>Email</label>
-                                <input className="input" type="email" placeholder="tu@email.com" value={rsvp.email} onChange={(e) => setRsvp({ ...rsvp, email: e.target.value })} />
-                            </div>
-                            <div className="input-group">
-                                <label>Acompañantes</label>
-                                <input className="input" type="number" min="0" max="10" value={rsvp.companions} onChange={(e) => setRsvp({ ...rsvp, companions: Number(e.target.value) })} />
-                            </div>
-                            <div className="input-group">
-                                <label>Restricciones alimentarias</label>
-                                <input className="input" placeholder="Ej: Celíaco, vegetariano..." value={rsvp.dietary} onChange={(e) => setRsvp({ ...rsvp, dietary: e.target.value })} />
-                            </div>
-                            <div className="full-width">
-                                <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                                    <Send size={18} /> Confirmar asistencia
-                                </button>
-                            </div>
-                        </form>
-                    )}
-                </div>
-
-                {/* Location */}
-                {event.location && (
-                    <div className="event-section">
-                        <h2><MapPin size={22} color="var(--error-400)" /> Ubicación</h2>
-                        <div className="glass-card" style={{ padding: 'var(--space-6)' }}>
-                            <p style={{ marginBottom: 'var(--space-4)', color: 'var(--neutral-300)' }}>{event.location}</p>
-                            <div className="location-buttons">
-                                <a href={`https://www.google.com/maps/search/${encodeURIComponent(event.location)}`} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-                                    <MapPin size={16} /> Google Maps
-                                </a>
-                                <a href={`https://waze.com/ul?q=${encodeURIComponent(event.location)}&navigate=yes`} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-                                    <Navigation size={16} /> Waze
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="event-section" style={{ textAlign: 'center', paddingBottom: 'var(--space-16)' }}>
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Link to={`/album/${eventId}`} className="btn btn-secondary"><Image size={16} /> Ver álbum</Link>
-                        <Link to={`/interaction/${eventId}`} className="btn btn-secondary"><Users size={16} /> Interacción</Link>
-                    </div>
                 </div>
             </div>
         </div>
